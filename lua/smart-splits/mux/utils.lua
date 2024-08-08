@@ -49,11 +49,17 @@ end
 ---and `on_exit` on `VimSuspend` and `VimLeavePre`.
 function M.startup()
   -- buffer tracking for "previous buffer"
-  vim.api.nvim_create_autocmd('WinLeave', {
-    callback = function()
-      prev_win = tonumber(vim.api.nvim_get_current_win())
-    end,
-  })
+  if not vim.api.nvim_create_autocmd then
+    vim.cmd([[
+    au! WinLeave call v:lua.require'smart-splits.mux.utils'.set_prev_win(winnr())
+    ]])
+  else
+    vim.api.nvim_create_autocmd('WinLeave', {
+      callback = function()
+        prev_win = tonumber(vim.api.nvim_get_current_win())
+      end,
+    })
+  end
 
   -- multiplexer startup/shutdown events
   local mux = require('smart-splits.mux').get()
@@ -62,19 +68,34 @@ function M.startup()
   end
   if mux.on_init then
     mux.on_init()
-    vim.api.nvim_create_autocmd('VimResume', {
-      callback = function()
-        mux.on_init()
-      end,
-    })
+    if not vim.api.nvim_create_autocmd then
+      vim.cmd([[
+        au! VimResume * v:lua.require'smart-splits.mux'.get().on_init()
+      ]])
+    else
+      vim.api.nvim_create_autocmd('VimResume', {
+        callback = function()
+          mux.on_init()
+        end,
+      })
+    end
   end
   if mux.on_exit then
-    vim.api.nvim_create_autocmd({ 'VimSuspend', 'VimLeavePre' }, {
-      callback = function()
-        mux.on_exit()
-      end,
-    })
+    if not vim.api.nvim_create_autocmd then
+      vim.cmd[[
+      au! VimSuspend,VimLeavePre * call v:lua.require'smart-splits.mux'.get().on_exit()
+      ]]
+    else
+      vim.api.nvim_create_autocmd({ 'VimSuspend', 'VimLeavePre' }, {
+        callback = function()
+          mux.on_exit()
+        end,
+      })
+    end
   end
 end
 
+function M.set_prev_win(winid)
+  prev_win = tonumber(winid)
+end
 return M
