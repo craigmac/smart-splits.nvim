@@ -1,6 +1,6 @@
 local M = {}
 
-M.directory = string.format('%s/smart_splits_nvim', vim.fn.stdpath('log'))
+M.directory = string.format('%s/smart_splits_nvim', vim.fn.stdpath('data'))
 M.filepath = string.format('%s/log.txt', M.directory)
 
 function M.init()
